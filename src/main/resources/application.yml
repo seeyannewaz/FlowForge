@@ -36,6 +36,13 @@ flowforge:
   redis:
     stream-key: flowforge.jobs
     group-name: flowforge-workers
+
   worker:
     enabled: true
     poll-ms: 1000
+    heartbeat-ms: 5000
+
+  recovery:
+    scan-ms: 5000
+    running-timeout-seconds: 30
+    heartbeat-timeout-seconds: 15

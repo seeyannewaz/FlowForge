@@ -1,6 +1,7 @@
 package com.flowforge.worker;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.connection.stream.*;
@@ -19,27 +20,45 @@ public class JobWorker {
 
     private final StringRedisTemplate redisTemplate;
     private final JobExecutionService executionService;
+    private final WorkerHeartbeatService heartbeatService;
     private final String streamKey;
     private final String groupName;
     private final String workerId;
+    private final String hostname;
 
     public JobWorker(
             StringRedisTemplate redisTemplate,
             JobExecutionService executionService,
+            WorkerHeartbeatService heartbeatService,
             @Value("${flowforge.redis.stream-key}") String streamKey,
             @Value("${flowforge.redis.group-name}") String groupName
     ) throws Exception {
         this.redisTemplate = redisTemplate;
         this.executionService = executionService;
+        this.heartbeatService = heartbeatService;
         this.streamKey = streamKey;
         this.groupName = groupName;
-        this.workerId = InetAddress.getLocalHost().getHostName() + "-" + UUID.randomUUID();
+        this.hostname = InetAddress.getLocalHost().getHostName();
+        this.workerId = hostname + "-" + UUID.randomUUID();
     }
 
     @PostConstruct
     public void started() {
+        heartbeatService.registerWorker(workerId, hostname);
+
         System.out.println("FlowForge worker started with workerId=" + workerId);
         System.out.println("Listening to Redis stream=" + streamKey + ", group=" + groupName);
+    }
+
+    @PreDestroy
+    public void stopped() {
+        heartbeatService.markStopped(workerId);
+        System.out.println("FlowForge worker stopped: " + workerId);
+    }
+
+    @Scheduled(fixedDelayString = "${flowforge.worker.heartbeat-ms}")
+    public void heartbeat() {
+        heartbeatService.heartbeat(workerId);
     }
 
     @Scheduled(fixedDelayString = "${flowforge.worker.poll-ms}")
@@ -68,18 +87,31 @@ public class JobWorker {
                     continue;
                 }
 
+                UUID jobId = UUID.fromString(jobIdValue.toString());
+
                 try {
-                    UUID jobId = UUID.fromString(jobIdValue.toString());
-                    System.out.println("Executing job: " + jobId);
+                    heartbeatService.markRunning(workerId, jobId);
 
-                    executionService.execute(jobId, workerId);
+                    JobExecutionResult result = executionService.execute(jobId, workerId);
 
-                    System.out.println("Finished job: " + jobId);
+                    if (!result.processed()) {
+                        heartbeatService.markIdle(workerId);
+                    } else if ("SUCCEEDED".equals(result.finalStatus())) {
+                        heartbeatService.markJobSucceeded(workerId);
+                    } else {
+                        heartbeatService.markJobFailed(workerId);
+                    }
+
                     acknowledge(record);
 
                 } catch (Exception e) {
-                    System.err.println("Worker failed while executing job: " + e.getMessage());
+                    heartbeatService.markJobFailed(workerId);
+
+                    System.err.println("Worker failed while processing job " + jobId + ": " + e.getMessage());
                     e.printStackTrace();
+
+                    // Do not acknowledge unexpected failures.
+                    // Recovery logic will handle stale RUNNING jobs.
                 }
             }
 
