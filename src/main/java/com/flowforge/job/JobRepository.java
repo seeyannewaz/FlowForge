@@ -15,6 +15,8 @@ public interface JobRepository extends JpaRepository<JobEntity, UUID> {
             LocalDateTime now
     );
 
+    long countByStatus(String status);
+
     @Query("""
             SELECT j
             FROM JobEntity j

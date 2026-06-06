@@ -9,4 +9,6 @@ public interface WorkerHeartbeatRepository extends JpaRepository<WorkerHeartbeat
     List<WorkerHeartbeatEntity> findAllByOrderByLastHeartbeatAtDesc();
 
     List<WorkerHeartbeatEntity> findByLastHeartbeatAtBefore(LocalDateTime cutoff);
+
+    long countByStatus(String status);
 }

@@ -1,14 +1,14 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
     name: flowforge
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/flowforge
-    username: flowforge
-    password: flowforge
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/flowforge}
+    username: ${SPRING_DATASOURCE_USERNAME:flowforge}
+    password: ${SPRING_DATASOURCE_PASSWORD:flowforge}
 
   jpa:
     hibernate:
@@ -23,26 +23,32 @@ spring:
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: flowforge
 
 flowforge:
   redis:
-    stream-key: flowforge.jobs
-    group-name: flowforge-workers
+    stream-key: ${FLOWFORGE_REDIS_STREAM_KEY:flowforge.jobs}
+    group-name: ${FLOWFORGE_REDIS_GROUP_NAME:flowforge-workers}
 
   worker:
-    enabled: true
-    poll-ms: 1000
-    heartbeat-ms: 5000
+    enabled: ${FLOWFORGE_WORKER_ENABLED:true}
+    poll-ms: ${FLOWFORGE_WORKER_POLL_MS:1000}
+    heartbeat-ms: ${FLOWFORGE_WORKER_HEARTBEAT_MS:5000}
 
   recovery:
-    scan-ms: 5000
-    running-timeout-seconds: 30
-    heartbeat-timeout-seconds: 15
+    scan-ms: ${FLOWFORGE_RECOVERY_SCAN_MS:5000}
+    running-timeout-seconds: ${FLOWFORGE_RECOVERY_RUNNING_TIMEOUT_SECONDS:30}
+    heartbeat-timeout-seconds: ${FLOWFORGE_RECOVERY_HEARTBEAT_TIMEOUT_SECONDS:15}

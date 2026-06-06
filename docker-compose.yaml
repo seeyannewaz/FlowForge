@@ -10,12 +10,55 @@ services:
       - "5433:5432"
     volumes:
       - flowforge-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowforge -d flowforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine
     container_name: flowforge-redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flowforge-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/flowforge
+      SPRING_DATASOURCE_USERNAME: flowforge
+      SPRING_DATASOURCE_PASSWORD: flowforge
+
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      FLOWFORGE_REDIS_STREAM_KEY: flowforge.jobs
+      FLOWFORGE_REDIS_GROUP_NAME: flowforge-workers
+
+      FLOWFORGE_WORKER_ENABLED: true
+      FLOWFORGE_WORKER_POLL_MS: 1000
+      FLOWFORGE_WORKER_HEARTBEAT_MS: 5000
+
+      FLOWFORGE_RECOVERY_SCAN_MS: 5000
+      FLOWFORGE_RECOVERY_RUNNING_TIMEOUT_SECONDS: 30
+      FLOWFORGE_RECOVERY_HEARTBEAT_TIMEOUT_SECONDS: 15
+    ports:
+      - "8080:8080"
 
 volumes:
   flowforge-postgres-data:

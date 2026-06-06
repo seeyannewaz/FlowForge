@@ -8,14 +8,20 @@ target/
 *.ear
 *.nar
 
-# Maven wrapper downloaded files
-.mvn/wrapper/maven-wrapper.jar
+# Maven build helper files
+.mvn/timing.properties
 
-# Keep Maven wrapper config if you add it later
-!.mvn/wrapper/maven-wrapper.properties
+# IMPORTANT:
+# If using Maven Wrapper, commit these:
+# mvnw
+# mvnw.cmd
+# .mvn/wrapper/maven-wrapper.properties
+# .mvn/wrapper/maven-wrapper.jar
+#
+# So do NOT ignore .mvn/wrapper/maven-wrapper.jar
 
 # =========================
-# Spring Boot
+# Spring Boot / Logs
 # =========================
 logs/
 *.log
@@ -67,7 +73,7 @@ desktop.ini
 # =========================
 docker-compose.override.yml
 
-# Local database/cache data if you ever bind-mount them
+# Local bind-mounted database/cache data
 postgres-data/
 redis-data/
 data/
@@ -78,6 +84,13 @@ data/
 coverage/
 *.exec
 jacoco.exec
+
+# =========================
+# JVM Crash Files
+# =========================
+hs_err_pid*
+replay_pid*
+.attach_pid*
 
 # =========================
 # Temporary Files

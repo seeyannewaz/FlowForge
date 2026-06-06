@@ -1,0 +1,11 @@
+target/
+.git/
+.idea/
+.vscode/
+*.iml
+*.log
+.DS_Store
+Thumbs.db
+docker-compose.override.yml
+.env
+.env.*
