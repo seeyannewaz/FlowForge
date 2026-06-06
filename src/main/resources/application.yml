@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: flowforge
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/flowforge
+    username: flowforge
+    password: flowforge
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+flowforge:
+  redis:
+    stream-key: flowforge.jobs
+    group-name: flowforge-workers
+  worker:
+    enabled: true
+    poll-ms: 1000
